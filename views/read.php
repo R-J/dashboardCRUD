@@ -3,7 +3,7 @@ $schema = $this->data('Schema');
 $data = $this->data('Data');
 $blacklist = $this->data('Blacklist', []);
 $primaryKey = $this->data('PrimaryKey', 'ID');
-$link = $this->data('ActionLink');
+$link = $this->data('IndexLink');
 $transientKey = $this->data('TransientKey');
 decho($this->Form->formData());
 ?>

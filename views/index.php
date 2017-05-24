@@ -6,14 +6,11 @@ $primaryKey = $this->data('PrimaryKey', 'ID');
 $link = $this->data('IndexLink');
 $transientKey = $this->data('TransientKey');
 ?>
-<?php if ($this->data('Help', false)): ?>
-<div class="Help Aside"><?= $this->data('Help') ?></div>
-<?php endif ?>
 <h1><?= $this->data('Title') ?></h1>
 <?php if ($this->data('Description', false)): ?>
 <div class="Info"><?= $this->data('Description') ?></div>
 <?php endif ?>
-<div class="Info"><?= anchor(t('Add Item'), $link.'/add', ['class' => 'Button']) ?></div>
+<div class="Info"><?= anchor(t('Add Item'), $link.'/add', ['class' => 'Button Primary']) ?></div>
 <?php if (count($data) == 0): ?>
 <div class="Info"><?= t(sprintf('The table "%s" is empty.', $this->data('TableName'))) ?></div>
 <?php else: ?>

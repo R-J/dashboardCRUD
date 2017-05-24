@@ -3,7 +3,7 @@
 $PluginInfo['dashboardCRUD'] = [
     'Name' => 'Dashboard CRUD Helper',
     'Description' => 'Helper plugin which provides a class that can be used by plugin authors to implement simple CRUD actions on one table in the dashboard.',
-    'Version' => '0.0.1',
+    'Version' => '0.1.0',
     'RequiredApplications' => ['Vanilla' => '2.3'],
     'MobileFriendly' => true,
     'HasLocale' => true,
@@ -31,11 +31,11 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
      *
      * @return  void.
      */
-    public function __construct($tableName, $indexLink, $primaryKey) {
+    public function __construct($tableName, $indexLink, $primaryKey = '') {
         $this->tableName = $tableName;
         $this->indexLink = $indexLink;
 
-        if (isset($primaryKey)) {
+        if ($primaryKey != '') {
             $this->primaryKey = $primaryKey;
         } else {
             // Build a PK if none is set: "TableNameID".
@@ -50,8 +50,7 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
      * Simple table with all rows from the database table. No pagination!
      *
      * @param SettingsController $sender Instance of the calling class.
-     * @param array $args Url parameters.
-     * @param array $options Allowed options are
+     * @param array $options Allowed options are:
      *                       Title: index page title.
      *                       Description: description to show on index page.
      *                       Blacklist: Columns to exclude from being displayed.
@@ -59,7 +58,7 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
      *
      * @return void.
      */
-    public function index($sender, $args, $options) {
+    public function index($sender, $options) {
         // Pass info to form.
         $sender->setData([
             'Title' => val('Title', $options, t('Show All')),
@@ -69,7 +68,8 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
             'Blacklist' => val('Blacklist', $options, []),
             'PrimaryKey' => $this->primaryKey,
             'IndexLink' => $this->indexLink,
-            'TransientKey' => Gdn::session()->transientKey()
+            'TransientKey' => Gdn::session()->transientKey(),
+            'TableName' => $this->tableName
         ]);
 
         // Render custom view if specified, else render default view for "Read"
@@ -88,7 +88,6 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
      * the table.
      *
      * @param SettingsController $sender Instance of the calling class.
-     * @param array $args Url parameters.
      * @param array $options Allowed options are
      *                       Title: index page title.
      *                       Description: description to show on index page.
@@ -97,7 +96,7 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
      *
      * @return void.
      */
-    public function add($sender, $args, $options = []) {
+    public function add($sender, $options = []) {
         // Save only authenticated POST data.
         if ($sender->Form->authenticatedPostBack() === true) {
             // Create new model for table.
@@ -115,7 +114,7 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
         $sender->setData([
             'Title' => val('Title', $options, t('Add Item')),
             'Description' => val('Description', $options, false),
-            'FormSchema' => $this->getFormSchema(val('Blacklist', $options))
+            'FormSchema' => $this->getFormSchema(val('Blacklist', $options, []))
         ]);
 
         // Render custom view if specified, else render default view for "Read"
@@ -134,30 +133,33 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
      * the table.
      *
      * @param SettingsController $sender Instance of the calling class.
-     * @param array $args Url parameters.
      * @param array $options Allowed options are
      *                       Title: index page title.
      *                       Description: description to show on index page.
      *                       Blacklist: Columns to exclude from being displayed.
      *                       View: A file path to a custom view.
+     *                       PrimaryKeyValue: The primary key value of the row to edit.
      *
      * @return void.
      */
-    public function edit($sender, $args, $options = []) {
+    public function edit($sender, $options = []) {
         // Change title if no custom title has been chosen, anyway.
         if (!isset($options['Title'])) {
             $options['Title'] = t('Edit Item');
         }
 
         // Get table row and set it to form.
-        $row = Gdn::sql()->getWhere($this->tableName, [$this->primaryKey => $args[1]])->firstRow();
+        $row = Gdn::sql()->getWhere(
+            $this->tableName,
+            [$this->primaryKey => val('PrimaryKeyValue', $options, 0)]
+        )->firstRow();
         $sender->Form->setData($row);
         // Add PrimaryKey as hidden form element so that save action will be
         // recognized as UPDATE.
         $sender->Form->addHidden($this->primaryKey, $row->{$this->primaryKey}, true);
 
         // Reuse $this->add() method.
-        $this->add($sender, $args, $options);
+        $this->add($sender, $options);
     }
 
     /**
@@ -167,16 +169,18 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
      * index view.
      *
      * @param SettingsController $sender Instance of the calling class.
-     * @param array $args Url parameters.
-     * @param array $options Not used by now. Maybe will be used for providing
-     *                       custom view in future versions
+     * @param array $options Allowed options are
+     *                       PrimaryKeyValue: The primary key value of the row to edit.
      *
      * @return void.
      */
-    public function delete($sender, $args, $options) {
+    public function delete($sender, $options) {
         // Check for valid TransientKey before deleting.
         if (Gdn::session()->validateTransientKey($sender->Request->get('tk'))) {
-            Gdn::sql()->delete($this->tableName, [$this->primaryKey => $args[1]]);
+            Gdn::sql()->delete(
+                $this->tableName,
+                [$this->primaryKey => val('PrimaryKeyValue', $options, 0)]
+            );
         }
         redirect($this->indexLink);
     }
@@ -201,8 +205,10 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
             switch ($schema->Type) {
                 case 'tinytext':
                 case 'text':
+                case 'mediumtext':
+                case 'longtext':
                     $formSchema[$column]['Control'] = 'TextBox';
-                    $formSchema[$column]['Options'] = ['class' => 'InputBox BigInput'];
+                    $formSchema[$column]['Options'] = ['class' => 'InputBox BigInput', 'MultiLine' => true];
                     break;
                 case 'int':
                     $formSchema[$column]['Control'] = 'TextBox';

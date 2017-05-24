@@ -10,3 +10,4 @@
 <?= $this->Form->open(), $this->Form->errors() ?>
 <?= $this->Form->simple($this->data('FormSchema')) ?>
 <?= $this->Form->close('Save') ?>
+</div>

@@ -1,4 +1,5 @@
 <?php
+
 $PluginInfo['dashboardCRUD'] = [
     'Name' => 'Dashboard CRUD Helper',
     'Description' => 'Helper plugin which provides a class that can be used by plugin authors to implement simple CRUD actions on one table in the dashboard.',
@@ -76,7 +77,7 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
         $sender->render(val(
             'View',
             $options,
-            $sender->fetchViewLocation('read', '', 'plugins/dashboardCRUD')
+            $sender->fetchViewLocation('index', '', 'plugins/dashboardCRUD')
         ));
     }
 
@@ -122,7 +123,7 @@ class DashboardCRUDPlugin extends Gdn_Plugin {
         $sender->render(val(
             'View',
             $options,
-            $sender->fetchViewLocation('addedit', '', 'plugins/dashboardCRUD')
+            $sender->fetchViewLocation('add', '', 'plugins/dashboardCRUD')
         ));
     }
 
